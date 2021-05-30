@@ -1,6 +1,7 @@
 const express = require('express');
 const router = new express.Router();
 const User = require('../models/user');
+const auth = require('../middleware/auth');
 
 //?Create new user
 router.post('/users', async (req, res) => {
@@ -23,43 +24,50 @@ router.post('/users/login', async (req, res) => {
       req.body.password
     );
     const token = await user.generateAuthToken();
-    res.status(201).send({ user, token });
+    res.status(200).send({ user, token });
   } catch (error) {
     res.status(400).send();
   }
 });
 
-//?FETCH multiple users
-router.get('/users', async (req, res) => {
+//?LOGOUT USER
+router.post('/users/logout', auth, async (req, res) => {
   try {
-    const users = await User.find({});
-    res.send(users);
+    req.user.tokens = req.user.tokens.filter(
+      (token) => token.token !== req.token
+    );
+    await req.user.save();
+    res.send();
   } catch (error) {
     res.status(500).send();
   }
 });
 
-//?FETCH user by ID
-router.get('/users/:id', async (req, res) => {
-  const _id = req.params.id;
+//?LOGOUT USER FROM ALL SESSIONS
+router.post('/users/logoutAll', auth, async (req, res) => {
   try {
-    const user = await User.findById(_id);
-    if (!user) {
-      return res.status(404).send();
-    }
-    res.send(user);
+    req.user.tokens = [];
+    await req.user.save();
+    res.send();
+  } catch (error) {
+    res.status(500).send();
+  }
+});
+
+//?FETCH users own profile
+router.get('/users/me', auth, async (req, res) => {
+  try {
+    res.send(req.user);
   } catch (error) {
     res.status(500).send();
   }
 });
 
 //?UPDATE user
-router.patch('/users/:id', async (req, res) => {
-  const _id = req.params.id;
-
+router.patch('/users/me', auth, async (req, res) => {
   //Allowing certain keys to be updated
   const updates = Object.keys(req.body);
-  const allowedUpdates = ['name', 'email', 'password'];
+  const allowedUpdates = ['username', 'email', 'password'];
   const isValidOperation = updates.every((update) =>
     allowedUpdates.includes(update)
   );
@@ -68,28 +76,20 @@ router.patch('/users/:id', async (req, res) => {
   }
 
   try {
-    const user = await User.findById(_id);
-    updates.forEach((update) => (user[update] = req.body[update]));
-    await user.save();
+    updates.forEach((update) => (req.user[update] = req.body[update]));
+    await req.user.save();
 
-    if (!user) {
-      return res.status(404).send();
-    }
-    res.send(user);
+    res.send(req.user);
   } catch (error) {
     res.status(400).send(error);
   }
 });
 
 //?DELETE user
-router.delete('/users/:id', async (req, res) => {
-  const _id = req.params.id;
+router.delete('/users/me', auth, async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(_id);
-    if (!user) {
-      return res.status(404).send();
-    }
-    res.send(user);
+    await req.user.remove();
+    res.send(req.user);
   } catch (error) {
     res.status(500).send();
   }
