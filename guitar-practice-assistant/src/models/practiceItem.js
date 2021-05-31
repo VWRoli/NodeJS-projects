@@ -14,6 +14,11 @@ const PracticeItem = mongoose.model('PracticeItem', {
     type: String,
     required: true,
   },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'User',
+  },
 });
 
 module.exports = PracticeItem;

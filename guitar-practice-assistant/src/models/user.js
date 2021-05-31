@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const PracticeItem = require('./practiceItem');
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -44,6 +45,13 @@ const userSchema = new mongoose.Schema({
   ],
 });
 
+//Setting up a relationship between users and tasks
+userSchema.virtual('PracticeItems', {
+  ref: 'PracticeItem',
+  localField: '_id',
+  foreignField: 'userId',
+});
+
 //?HIDE PRIVATE DATA
 userSchema.methods.toJSON = function () {
   const userObject = this.toObject();
@@ -83,6 +91,12 @@ userSchema.pre('save', async function (next) {
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 8);
   }
+  next();
+});
+
+//? Delete user items when user is deleted
+userSchema.pre('remove', async function (next) {
+  await PracticeItem.deleteMany({ userId: this._id });
   next();
 });
 
