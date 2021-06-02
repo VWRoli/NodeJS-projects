@@ -4,49 +4,54 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const PracticeItem = require('./practiceItem');
 
-const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    unique: true,
-    required: true,
-    trim: true,
-  },
-  email: {
-    type: String,
-    unique: true,
-    required: true,
-    trim: true,
-    lowercase: true,
-    validate(value) {
-      if (!validator.isEmail(value)) {
-        throw new Error('Email is invalid');
-      }
+const userSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      unique: true,
+      required: true,
+      trim: true,
     },
-  },
-  password: {
-    type: String,
-    required: true,
-    trim: true,
-    validate(value) {
-      if (!validator.isStrongPassword(value)) {
-        throw new Error(
-          'The password you provided is not strong enough! The password should be minimum 8 charachters long, should contain at least one lowercase letter, at least one uppercase letter, at least one number, and at least one symbol.'
-        );
-      }
-    },
-  },
-  tokens: [
-    {
-      token: {
-        type: String,
-        required: true,
+    email: {
+      type: String,
+      unique: true,
+      required: true,
+      trim: true,
+      lowercase: true,
+      validate(value) {
+        if (!validator.isEmail(value)) {
+          throw new Error('Email is invalid');
+        }
       },
     },
-  ],
-});
+    password: {
+      type: String,
+      required: true,
+      trim: true,
+      validate(value) {
+        if (!validator.isStrongPassword(value)) {
+          throw new Error(
+            'The password you provided is not strong enough! The password should be minimum 8 charachters long, should contain at least one lowercase letter, at least one uppercase letter, at least one number, and at least one symbol.'
+          );
+        }
+      },
+    },
+    tokens: [
+      {
+        token: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+);
 
 //Setting up a relationship between users and tasks
-userSchema.virtual('PracticeItems', {
+userSchema.virtual('items', {
   ref: 'PracticeItem',
   localField: '_id',
   foreignField: 'userId',

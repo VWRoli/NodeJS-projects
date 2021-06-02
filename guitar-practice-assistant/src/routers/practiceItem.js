@@ -19,9 +19,35 @@ router.post('/items', auth, async (req, res) => {
 
 //? FETCH all practice items
 router.get('/items', auth, async (req, res) => {
+  const match = {};
+  const sort = {};
+
+  //Get songs
+  if (req.query.type) {
+    match.type = req.query.type;
+  }
+  //Get excercises
+  if (req.query.type) {
+    match.type = req.query.type;
+  }
+
+  if (req.query.sort) {
+    const parts = req.query.sort.split('_');
+    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1;
+  }
   try {
-    const items = await PracticeItem.find({ userId: req.user._id });
-    res.send(items);
+    await req.user
+      .populate({
+        path: 'items',
+        match,
+        options: {
+          limit: parseInt(req.query.limit),
+          skip: parseInt(req.query.skip),
+          sort,
+        },
+      })
+      .execPopulate();
+    res.send(req.user.items);
   } catch (error) {
     res.status(500).send();
   }
